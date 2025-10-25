@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="he">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>עוד מ"ט אתם בשחמט</title>
+  <link rel="icon" href="c.jpg" type="image/x-icon" />
+
+  <style>
+    /* === Font like in the inspiration === */
+    @font-face {
+      font-family: "Miri DL v2 AAA";
+      font-style: normal;
+      font-weight: normal;
+      src: url("Miri Medium.ttf") format("opentype");
+    }
+
+    /* === Base layout === */
+    body {
+      direction: rtl;
+      font-family: "Miri DL v2 AAA", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url(chess4.jpg);
+      background-size: cover;
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      color: white;
+      text-align: center;
+      padding-top: 24px;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-rows: repeat(8, auto);
+      grid-gap: 15px;
+      max-width: 1000px;
+      width: 95%;
+      padding: 20px 20px 60px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 15px;
+      overflow-y: auto;
+      height: 90vh;
+      margin-bottom: 50px;
+    }
+
+    .week,
+    .week1 {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .week1 {
+      justify-content: flex-end;
+      padding-left: 9%;
+    }
+
+    .day-card,
+    .shabat-card {
+      position: relative;
+      width: 100px;
+      height: 150px;
+      background-color: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      padding: 10px;
+      color: #000;
+      overflow: hidden;
+    }
+
+    .date {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #f39c12;
+    }
+
+    /* Message styling like the inspiration */
+    .message {
+      position: absolute;
+      inset: 10px;
+      font-size: 12px;
+      visibility: hidden;
+      color: rgb(1, 181, 214);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      padding: 6px;
+      z-index: 3;
+      line-height: 1.25;
+    }
+
+    /* Canvas cover */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+    }
+
+    /* Background image inside card – hidden until reveal (like inspiration) */
+    .day-card>img,
+    .shabat-card>img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 120%;
+      height: 120%;
+      object-fit: cover;
+      border-radius: 10px;
+      visibility: hidden;
+    }
+
+    .shabat {
+      display: block;
+    }
+
+    .day-card>h2 {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      margin: 0;
+      z-index: 2;
+      font-family: 'Times New Roman', serif;
+      color: #f39c12;
+    }
+
+    /* Reveal behavior to match inspiration */
+    .day-card.revealed .message {
+      visibility: visible;
+    }
+
+    .day-card.revealed .bg,
+    .shabat-card .shabat {
+      visibility: visible;
+    }
+
+    .title {
+      font-size: 36px;
+      text-align: center;
+      margin: 0 0 8px;
+      color: #c45648;
+    }
+
+    h2.subtitle {
+      margin: 0 0 16px;
+      color: #f1c40f;
+      font-weight: normal;
+    }
+
+    /* Last day block – styled like inspiration with subtle animation on reveal */
+    .last-day {
+      position: relative;
+      width: min(500px, 50vw);
+      height: auto;                 /* לא גובה קבוע */
+      aspect-ratio: 4 / 5;          /* זמני – נתאים בדיוק ב-JS */
+      background-image: url("michal.png");
+      background-size: cover;       /* ימלא בלי שוליים */
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: transparent;/* שלא ייראו שוליים אפורים/לבנים */
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      overflow: hidden;             /* חותך קנבס ושאר שכבות לקצה מעוגל */
+    }
+    .scratch-off { position: absolute; inset: 0; }
+    canvas { width: 100%; height: 100%; display: block; border-radius: 10px; }
+
+
+    .last-day h1 {
+      font-size: 2.5em;
+      margin: 0;
+      color: #333;
+    }
+
+    .last-day p {
+      font-size: 1.2em;
+      color: #666;
+    }
+
+    .last-day img {
+      margin-top: 20px;
+    }
+
+    .scratch-off {
+      position: absolute;
+      inset: 0;
+    }
+
+    .last-day.revealed {
+      animation: finalReveal 1s ease-in-out;
+    /* width: 90%;  <-- למחוק */
+    }
+
+    @keyframes finalReveal {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+
+      100% {
+        transform: scale(1.05);
+      }
+    }
+  </style>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-6KLLVDK5G6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-6KLLVDK5G6');
+  </script>
+</head>
+
+<body>
+  <h1 class="title">בעוד מ"ט אתם ב<span style="color: black; font-size: 48px;">ש</span><span
+      style="color: white; font-size: 50px;">ח</span><span style="color: black; font-size: 45px;">מ</span><span
+      style="color: white; font-size: 53px;">ט</span> הוא ב<span style="color: black; font-size: 55px;">שחור</span> את
+    ב<span style="color: whitesmoke; font-size: 55px;">לבן</span> ומתחילים את המהלך</h1>
+  <h2 class="subtitle">כל יום יש לגרד את הכרטיס ביום המתאים, בלי לדלג!!!</h2>
+
+  <div class="calendar">
+    <!-- Week 1 -->
+    <div class="week1">
+      <div>
+        <div class="date">ד' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            שבע שבתות שבתות תמימות
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ה' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            אם את רוצה בעל תני לו אישה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ו' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            החיים בזוגיות הם כמו מטוס - תמיד טוב שיש שני טייסים כדי לשמור על המסלול.
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ז' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            זוגיות היא כמו מספריים- שניים ששמים פס על העולם
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ח' חשון</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 2 -->
+    <div class="week">
+      <div>
+        <div class="date">ט' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            עקרונות לשלום בית:
+            לוותר, לוותר ולוותר....
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            לא מתחתנים עם מי שאפשר לחיות אתו ,מתחתנים עם מי שאי אפשר לחיות בלעדיו
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"א חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            שאתה נותן ומתרוקן זה הקרבה
+            שאתה נותן ומתמלא זה אהבה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ב חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            אושר הוא הדבר היחיד שמכפיל את עצמו כשמחלקים אותו לשניים.
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ג חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            אם אישה מצפה מבעלה שיתנהג כמו מלאך... קודם עליה ליצור לו בבית גן עדן..
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ד חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            ארבעים יום מהיום וזה קורה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ט"ו חשון</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 3 -->
+    <div class="week">
+      <div>
+        <div class="date">ט"ז חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            ייחוס- כל אחד יכול להתחיל בעצמו.
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ז חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            בסוף הכל יהיה טוב ואם זה לא טוב זה לא הסוף
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ח חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            העולם מלא באנשים נחמדים. אם אתה לא יכול למצוא אחד, תהיה אחד
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ט חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            כשאוהבים ומתרגשים- אין צורך במילים!
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ' חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            מילים יכולות לשקר- אך מעשים תמיד אומרים את האמת
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"א חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            חיי נישואין הם כמו יין - משתבחים עם השנים
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ב חשון</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 4 -->
+    <div class="week">
+      <div>
+        <div class="date">כ"ג חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            חתונה היא לא המטרה, אלא ההתחלה של מסע קסום
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ד חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            מתחמם, מתחמם, עוד חודש!!!
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ה חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            השלום הוא הדרך, והדרך היא השלום
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ה חשון </div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+             הדרך הטובה ביותר לחזות את העתיד היא ליצור אותו.
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ז חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            דברים טובים באים בזוגות
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ח חשון</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            את הציפיות תשאירי לכריות...
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ט חשון</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 5 -->
+    <div class="week">
+      <div>
+        <div class="date">א' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            יום ללא צחוק הוא יום מבוזבז
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ב' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            בעבודות הבית נקוט הכלל: אם תעזביני יום- יומיים אעזבך
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ג' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            לחוצה? עד החתונה זה יעבור
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ד' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            פקחו את העיניים לרווחה לפני האירוסין ועיצמו אותן למחצה לאחריהם
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ה' כסלו</div>
+       <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            אל תגידי אני לא יכולה תעשי את מה שאת כן יכולה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ו' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            כל יום חדש שמפציע הוא מתנה מאלוקים לאדם
+            מה שאדם עושה איתו זו מתנה מאדם לאלוקים
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ז' כסלו</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 6 -->
+    <div class="week">
+      <div>
+        <div class="date">ח' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            הזוג הכי תואם נמצא בחנות הנעליים
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ט' כסלו</div>
+       <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+          לא קיים אדם שטוב לו בהכל, קיים אדם שרואה את הטוב בהכל!
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            עוד שבועיים
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"א כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            מי שלא מרוצה מהיחס שהוא מקבל שיבדוק את היחס שהוא נותן
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ב כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            נישואין גדולים הם לא בין הזוג המושלם, הם בין זוג לא מושלם הלומד להנות מההבדלים בינהם
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ג כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            חיים מאושרים הם מידה ולא מציאות
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ד כסלו</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 7 -->
+    <div class="week">
+      <div>
+        <div class="date">ט"ו כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            תמיד זכרי לחייך לחיים, ובכך החיים יחייכו אלייך!
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">ט"ז כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            הנה זה מתקרבבבב!
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ז כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+          אֵצֶל הָעוֹלָם אֶמוּנָה הוּא דָּבָר קָטָן,
+          וְאֶצְלִי אֱמוּנָה הוּא דָּבָר גָּדוֹל מְאוֹד.
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ח כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            עוד שבע לזוג מעל הטבע
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">י"ט כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            טובים השניים מן האחד
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ' כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            שבת האחרונה רווקה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"א כסלו</div>
+        <div class="shabat-card">
+          <img class="shabat" src="shabat.jpg" alt="Shabat Image">
+          <img class="shabat" src="shabat.gif" alt="Shabat Image">
+          <div class="message"></div>
+          <canvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week 8 -->
+    <div class="week">
+      <div>
+        <div class="date">כ"ב כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            אשת חיל מי ימצא הוא יכול לשיר את יכולה ליישם
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="date">כ"ג כסלו</div>
+        <div class="day-card">
+          <img src="www.jpg" class="bg" alt="Bride Image">
+          <div class="message">
+            מחר זה קורה
+          </div>
+          <canvas></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <!-- יום אחרון -->
+        <div class="last-day">
+          <div class="scratch-off">
+            <canvas id="scratchCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Keep the same scratch logic – only visual style changed via CSS */
+    document.querySelectorAll('.day-card').forEach(card => {
+      const canvas = card.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = card.offsetWidth;
+      canvas.height = card.offsetHeight;
+
+      // Cover (kept as in original logic)
+      ctx.fillStyle = 'silver';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let isDrawing = false;
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        draw(e);
+      });
+
+      canvas.addEventListener('mousemove', draw);
+
+      canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+        checkScratchCompletion(card, canvas);
+      });
+
+      canvas.addEventListener('mouseout', () => {
+        isDrawing = false;
+      });
+
+      function draw(e) {
+        if (!isDrawing) return;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 20;
+        ctx.lineCap = 'round';
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
+
+      function checkScratchCompletion(card, canvas) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let totalPixels = imageData.data.length / 4;
+        let transparentPixels = 0;
+
+        for (let i = 3; i < imageData.data.length; i += 4) {
+          if (imageData.data[i] === 0) {
+            transparentPixels++;
+          }
+        }
+
+        if (transparentPixels > totalPixels * 0.5) {
+          canvas.style.display = 'none';
+          card.classList.add('revealed');
+        }
+      }
+    });
+
+    // Last-day canvas logic (kept as in your original with minor layout-only styling)
+ </script>
+ <script>
+document.addEventListener("DOMContentLoaded", function () {
+  const box = document.querySelector('.last-day');
+  const canvas = document.getElementById('scratchCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // === הגדרות החלפה (התאימי את שם הקובץ) ===
+  const ALT_IMAGE_URL = 'mazal.gif';      // <-- החליפי לשם/נתיב התמונה שתרצי
+  const DELAY_BEFORE_SWAP_MS = 3000;      // 3 שניות לפני ההחלפה
+  const SHOW_ALT_DURATION_MS = 10000;     // 10 שניות הצגת התמונה החלופית
+
+  // שמירת תמונת הרקע המקורית (מה-CSS)
+  const originalBg = getComputedStyle(box).backgroundImage;
+
+  let swapTriggered = false;
+
+  // === התאמת קנבס לגודל הקופסה + תמיכה ב-DPR ===
+  function sizeCanvas() {
+    const rect = box.getBoundingClientRect();
+
+    // מידות CSS
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    // מידות פיזיות (פיקסלים) לפי DPR
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = Math.round(rect.width  * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+
+    // איפוס טרנספורמים + סקייל
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // שכבת "כסף"
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#C0C0C0';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    // מצב מחיקה לציור הגירוד
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = 25;
+    ctx.lineCap = 'round';
+  }
+
+  sizeCanvas();
+  window.addEventListener('resize', sizeCanvas, { passive: true });
+
+  // === גרירה/גירוד ===
+  let isDrawing = false;
+
+  function start(x, y) {
+    isDrawing = true;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+  function move(x, y) {
+    if (!isDrawing) return;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  function end() {
+    if (!isDrawing) return;
+    isDrawing = false;
+
+    // 50% שקיפות על הבאפר הפיזי
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let total = imgData.data.length / 4, clear = 0;
+    for (let i = 3; i < imgData.data.length; i += 4) {
+      if (imgData.data[i] === 0) clear++;
+    }
+    if (clear / total > 0.50) {
+      revealAndSwap();
+    }
+  }
+
+  // עכבר
+  canvas.addEventListener('mousedown', e => start(e.offsetX, e.offsetY));
+  canvas.addEventListener('mousemove', e => move(e.offsetX, e.offsetY));
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+  // מגע (אופציונלי למובייל)
+  canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    start(t.clientX - r.left, t.clientY - r.top);
+  }, { passive: true });
+  canvas.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    move(t.clientX - r.left, t.clientY - r.top);
+  }, { passive: true });
+  canvas.addEventListener('touchend', end, { passive: true });
+
+  // === אחרי גירוד: להסתיר, להמתין 3ש', להציג חלופית 10ש', ולהחזיר מקורית ===
+  function revealAndSwap() {
+    if (swapTriggered) return; // להריץ פעם אחת בלבד
+    swapTriggered = true;
+
+    // הסתירו את שכבת הגירוד והפעילו את האנימציה הקיימת
+    canvas.style.display = 'none';
+    box.classList.add('revealed');
+
+    // preload לתמונה החלופית כדי למנוע הבהוב
+    const img = new Image();
+    img.src = ALT_IMAGE_URL;
+
+    // אחרי 3 שניות – החלפה לתמונה החלופית
+    setTimeout(() => {
+      box.style.backgroundImage = `url("${ALT_IMAGE_URL}")`;
+
+      // אחרי 10 שניות – החזרה לתמונה המקורית
+      setTimeout(() => {
+        box.style.backgroundImage = originalBg;
+      }, SHOW_ALT_DURATION_MS);
+
+    }, DELAY_BEFORE_SWAP_MS);
+  }
+
+  // נגיעות איכות חוויית משתמש
+  box.style.willChange = 'transform';
+  canvas.style.touchAction = 'none';
+  canvas.style.userSelect = 'none';
+});
+</script>
+
+</body>
+
+</html>
